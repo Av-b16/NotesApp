@@ -3,7 +3,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/
 import { getDatabase, ref, set, push, onValue, remove, update } from "firebase/database";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAIe3AsTWvMDEFP5_P3ZZLuM-shPZ8a0xI",
+  apiKey: REACT_APP_FIREBASE_API_KEY,
   authDomain: "collaborative-notes-5b6a8.firebaseapp.com",
   databaseURL: "https://collaborative-notes-5b6a8-default-rtdb.firebaseio.com",
   projectId: "collaborative-notes-5b6a8",
@@ -18,3 +18,4 @@ const provider = new GoogleAuthProvider();
 const database = getDatabase(app);
 
 export { auth, provider, database, signInWithPopup, signOut, ref, set, push, onValue, remove, update };
+//"AIzaSyAIe3AsTWvMDEFP5_P3ZZLuM-shPZ8a0xI"
