@@ -1,46 +1,66 @@
 import { auth, provider } from "../firebase/firebaseConfig";
 import { signInWithPopup, signOut } from "firebase/auth";
-import { database } from "../firebase/firebaseConfig";
-import { ref, push, get, update, remove } from "firebase/database";
+import { database, ref, push, remove, update, onValue, set } from "../firebase/firebaseConfig";
+export const ADD_NOTE = "ADD_NOTE";
+export const DELETE_NOTE = "DELETE_NOTE";
+export const UPDATE_NOTE = "UPDATE_NOTE";
+export const SET_NOTES = "SET_NOTES";
+export const SET_USER = "SET_USER"; // Add this for user authentication
 
-// Authentication Actions
-export const loginUser = () => async (dispatch) => {
-  try {
-    const result = await signInWithPopup(auth, provider);
-    dispatch({ type: "LOGIN_SUCCESS", payload: result.user });
-  } catch (error) {
-    dispatch({ type: "LOGIN_FAILURE", payload: error.message });
-  }
+// Google Sign-In Action
+export const googleSignIn = () => (dispatch) => {
+    signInWithPopup(auth, provider)
+        .then((result) => {
+            const user = result.user;
+            dispatch({ type: SET_USER, payload: user });
+        })
+        .catch((error) => {
+            console.error("Error during sign-in: ", error);
+        });
 };
 
-export const logoutUser = () => async (dispatch) => {
-  await signOut(auth);
-  dispatch({ type: "LOGOUT" });
+// Sign-Out Action
+export const googleSignOut = () => (dispatch) => {
+    signOut(auth)
+        .then(() => {
+            dispatch({ type: SET_USER, payload: null });
+        })
+        .catch((error) => {
+            console.error("Error during sign-out: ", error);
+        });
 };
 
-// Notes Actions
-export const fetchNotes = () => async (dispatch) => {
-  dispatch({ type: "FETCH_NOTES_REQUEST" });
-  try {
-    const snapshot = await get(ref(database, "notes"));
-    const notes = snapshot.val() ? Object.entries(snapshot.val()).map(([id, note]) => ({ id, ...note })) : [];
-    dispatch({ type: "FETCH_NOTES_SUCCESS", payload: notes });
-  } catch (error) {
-    dispatch({ type: "FETCH_NOTES_FAILURE", payload: error.message });
-  }
+// Action Types
+
+
+// Fetch notes from Firebase
+export const fetchNotes = () => (dispatch) => {
+    onValue(ref(database, "notes"), (snapshot) => {
+        const notesData = snapshot.val() || {};
+        const notesArray = Object.keys(notesData).map((key) => ({
+            id: key,
+            ...notesData[key],
+        }));
+        dispatch({ type: SET_NOTES, payload: notesArray });
+    });
 };
 
-export const addNote = (note) => async (dispatch) => {
-  const newNoteRef = push(ref(database, "notes"), note);
-  dispatch({ type: "ADD_NOTE", payload: { id: newNoteRef.key, ...note } });
+// Add a note
+export const addNote = (title, content) => () => {
+    const noteRef = push(ref(database, "notes"));
+    set(noteRef, {
+        title,
+        content,
+        timestamp: Date.now(),
+    });
 };
 
-export const updateNote = (id, updatedContent) => async (dispatch) => {
-  await update(ref(database, `notes/${id}`), updatedContent);
-  dispatch({ type: "UPDATE_NOTE", payload: { id, ...updatedContent } });
+// Delete a note
+export const deleteNote = (id) => () => {
+    remove(ref(database, `notes/${id}`));
 };
 
-export const deleteNote = (id) => async (dispatch) => {
-  await remove(ref(database, `notes/${id}`));
-  dispatch({ type: "DELETE_NOTE", payload: id });
+// Update a note
+export const updateNote = (id, updatedNote) => () => {
+    update(ref(database, `notes/${id}`), updatedNote);
 };
